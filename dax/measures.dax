@@ -1,0 +1,92 @@
+-- ============================================================
+-- Network Map Dashboard — DAX Measures
+-- ============================================================
+-- Copy each measure into PowerBI Desktop:
+--   1. Click the _Measures table (or any table)
+--   2. Click Modeling > New Measure
+--   3. Paste the measure formula (without the comment header)
+--   4. Set the format as noted
+-- ============================================================
+
+
+-- ============================================================
+-- Step 0: Create a Measures table
+-- ============================================================
+-- In PowerBI, click Modeling > New Table, paste:
+--
+--   _Measures = ROW("Placeholder", 0)
+--
+-- Then hide the Placeholder column (right-click > Hide in report view).
+-- All measures below should be created in this _Measures table.
+
+
+-- ============================================================
+-- Measure 1: YTD COGP Actual
+-- ============================================================
+-- Returns the sum of monthly COGP actuals from month 1 through the
+-- selected month. If no month is selected, returns the full-year total.
+-- Format: Currency ($), 0 decimal places
+
+YTD COGP Actual =
+VAR SelectedYear = SELECTEDVALUE(tblCOGP_Monthly[Year])
+VAR SelectedMonth = SELECTEDVALUE(tblCOGP_Monthly[Month])
+RETURN
+    IF(
+        ISBLANK(SelectedMonth),
+        CALCULATE(
+            SUM(tblCOGP_Monthly[COGP_Actual]),
+            tblCOGP_Monthly[Year] = SelectedYear
+        ),
+        CALCULATE(
+            SUM(tblCOGP_Monthly[COGP_Actual]),
+            tblCOGP_Monthly[Year] = SelectedYear,
+            tblCOGP_Monthly[Month] <= SelectedMonth
+        )
+    )
+
+
+-- ============================================================
+-- Measure 2: Selected Month COGP
+-- ============================================================
+-- Returns the COGP actual for a single selected month.
+-- Returns blank if no month is selected (tooltip won't show it).
+-- Format: Currency ($), 0 decimal places
+
+Selected Month COGP =
+VAR SelectedYear = SELECTEDVALUE(tblCOGP_Monthly[Year])
+VAR SelectedMonth = SELECTEDVALUE(tblCOGP_Monthly[Month])
+RETURN
+    IF(
+        NOT ISBLANK(SelectedMonth),
+        CALCULATE(
+            SUM(tblCOGP_Monthly[COGP_Actual]),
+            tblCOGP_Monthly[Year] = SelectedYear,
+            tblCOGP_Monthly[Month] = SelectedMonth
+        )
+    )
+
+
+-- ============================================================
+-- Measure 3: Total COGP Plan
+-- ============================================================
+-- Returns the sum of annual plan COGP for the selected year.
+-- Used in the detail table and tooltips.
+-- Format: Currency ($), 0 decimal places
+
+Total COGP Plan =
+VAR SelectedYear = SELECTEDVALUE(tblCOGP_Plan[Year])
+RETURN
+    CALCULATE(
+        SUM(tblCOGP_Plan[COGP_Plan]),
+        tblCOGP_Plan[Year] = SelectedYear
+    )
+
+
+-- ============================================================
+-- Measure 4: Site Count
+-- ============================================================
+-- Returns the distinct count of sites in the current filter context.
+-- Used by the summary cards (one card per facility type).
+-- Format: Whole Number
+
+Site Count = DISTINCTCOUNT(tblSites[SiteID])
